@@ -1,0 +1,36 @@
+# Environment
+.env
+backend/.env
+backend/.env.backup
+backend/.env.production
+frontend/.env
+
+# Backend
+backend/vendor/
+backend/node_modules/
+backend/storage/*.key
+backend/storage/logs/*.log
+backend/bootstrap/cache/*.php
+backend/public/storage
+backend/public/hot
+backend/public/build
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Testing / coverage
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+coverage/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
