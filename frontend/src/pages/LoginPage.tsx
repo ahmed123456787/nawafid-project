@@ -1,3 +1,75 @@
+import { useState, type FormEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import { useAuth } from '../context/AuthContext'
+
 export default function LoginPage() {
-  return <div>Login</div>
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: { pathname: string } } | null)?.from
+    ?.pathname
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState<Record<string, string[]>>({})
+  const [message, setMessage] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await login({ email, password })
+      navigate(from ?? '/projects', { replace: true })
+    } catch (err: any) {
+      setErrors(err?.response?.data?.errors ?? {})
+      setMessage(err?.response?.data?.message ?? 'Unable to log in.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      <h2 className="text-lg font-semibold text-slate-900">Log in</h2>
+
+      {message && !Object.keys(errors).length && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {message}
+        </p>
+      )}
+
+      <Input
+        label="Email"
+        type="email"
+        autoComplete="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        error={errors.email?.[0]}
+      />
+      <Input
+        label="Password"
+        type="password"
+        autoComplete="current-password"
+        required
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        error={errors.password?.[0]}
+      />
+
+      <Button type="submit" className="w-full" loading={submitting}>
+        Log in
+      </Button>
+
+      <p className="text-center text-sm text-slate-600">
+        Don't have an account?{' '}
+        <Link to="/register" className="font-medium text-indigo-600 hover:underline">
+          Register
+        </Link>
+      </p>
+    </form>
+  )
 }

@@ -1,6 +1,5 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useState,
@@ -58,38 +57,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token])
 
-  const persistSession = useCallback((nextUser: User, nextToken: string) => {
+  const persistSession = (nextUser: User, nextToken: string) => {
     localStorage.setItem(TOKEN_KEY, nextToken)
     setToken(nextToken)
     setUser(nextUser)
-  }, [])
+  }
 
-  const login = useCallback(
-    async (payload: LoginPayload) => {
-      const { user: u, token: t } = await authApi.login(payload)
-      persistSession(u, t)
-    },
-    [persistSession],
-  )
+  const login = async (payload: LoginPayload) => {
+    const { user: u, token: t } = await authApi.login(payload)
+    persistSession(u, t)
+  }
 
-  const register = useCallback(
-    async (payload: RegisterPayload) => {
-      const { user: u, token: t } = await authApi.register(payload)
-      persistSession(u, t)
-    },
-    [persistSession],
-  )
+  const register = async (payload: RegisterPayload) => {
+    const { user: u, token: t } = await authApi.register(payload)
+    persistSession(u, t)
+  }
 
-  const logout = useCallback(async () => {
+  const logout = async () => {
     try {
       await authApi.logout()
     } catch {
-      // ignore network errors on logout; always clear local state
+      // ignore network errors; always clear local state
     }
     localStorage.removeItem(TOKEN_KEY)
     setToken(null)
     setUser(null)
-  }, [])
+  }
 
   const value: AuthContextValue = {
     user,
