@@ -6,10 +6,15 @@ use App\Http\Requests\AddMemberRequest;
 use App\Http\Requests\UpdateMemberRoleRequest;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\ProjectMembershipService;
 use Illuminate\Http\JsonResponse;
 
 class ProjectMemberController extends Controller
 {
+    public function __construct(protected ProjectMembershipService $memberships)
+    {
+    }
+
     /**
      * Add a user to the project with a role.
      */
@@ -17,15 +22,13 @@ class ProjectMemberController extends Controller
     {
         $this->authorize('manageMembers', $project);
 
-        $project->members()->attach(
+        $project = $this->memberships->add(
+            $project,
             $request->integer('user_id'),
-            ['role' => $request->string('role')]
+            (string) $request->string('role'),
         );
 
-        return response()->json(
-            $project->load('members'),
-            201
-        );
+        return response()->json($project, 201);
     }
 
     /**
@@ -35,19 +38,13 @@ class ProjectMemberController extends Controller
     {
         $this->authorize('manageMembers', $project);
 
-        $this->ensureUserIsMember($project, $user);
-
-        $newRole = (string) $request->string('role');
-
-        if ($newRole !== 'owner') {
-            $this->ensureNotLastOwner($project, $user);
-        }
-
-        $project->members()->updateExistingPivot($user->id, ['role' => $newRole]);
-
-        return response()->json(
-            $project->load('members')
+        $project = $this->memberships->changeRole(
+            $project,
+            $user,
+            (string) $request->string('role'),
         );
+
+        return response()->json($project);
     }
 
     /**
@@ -57,45 +54,8 @@ class ProjectMemberController extends Controller
     {
         $this->authorize('manageMembers', $project);
 
-        $this->ensureUserIsMember($project, $user);
-        $this->ensureNotLastOwner($project, $user);
-
-        $project->members()->detach($user->id);
+        $this->memberships->remove($project, $user);
 
         return response()->json(null, 204);
-    }
-
-    /**
-     * Abort with 404 if the user is not a member of the project.
-     */
-    protected function ensureUserIsMember(Project $project, User $user): void
-    {
-        $isMember = $project->members()
-            ->where('users.id', $user->id)
-            ->exists();
-
-        abort_unless($isMember, 404, 'User is not a member of this project.');
-    }
-
-    /**
-     * Abort with 422 if removing or demoting this user would leave
-     * the project with no owners.
-     */
-    protected function ensureNotLastOwner(Project $project, User $user): void
-    {
-        $isOwner = $project->members()
-            ->where('users.id', $user->id)
-            ->wherePivot('role', 'owner')
-            ->exists();
-
-        if (! $isOwner) {
-            return;
-        }
-
-        $ownerCount = $project->members()
-            ->wherePivot('role', 'owner')
-            ->count();
-
-        abort_if($ownerCount <= 1, 422, 'Cannot remove or demote the last owner of the project.');
     }
 }

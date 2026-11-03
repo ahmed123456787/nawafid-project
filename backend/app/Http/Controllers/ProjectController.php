@@ -5,12 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
+use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ProjectController extends Controller
 {
+    public function __construct(protected ProjectService $projects)
+    {
+    }
+
+
     /**
      * List projects the authenticated user belongs to.
      *
@@ -47,13 +52,7 @@ class ProjectController extends Controller
     {
         $this->authorize('create', Project::class);
 
-        $project = DB::transaction(function () use ($request) {
-            $project = Project::create($request->validated());
-
-            $project->members()->attach($request->user()->id, ['role' => 'owner']);
-
-            return $project;
-        });
+        $project = $this->projects->createFor($request->user(), $request->validated());
 
         return response()->json($project->load('members'), 201);
     }
