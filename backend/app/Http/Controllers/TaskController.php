@@ -21,10 +21,13 @@ class TaskController extends Controller
      *   priority=low|medium|high
      *   assigned_to=<user_id>
      *   q=<search in title>
+     *   per_page=<int, default 15, max 100>
      */
     public function index(Request $request, Project $project): JsonResponse
     {
         $this->authorize('view', $project);
+
+        $perPage = min((int) $request->integer('per_page', 15) ?: 15, 100);
 
         $tasks = $project->tasks()
             ->when(
@@ -45,7 +48,7 @@ class TaskController extends Controller
             )
             ->with(['assignee', 'creator'])
             ->orderByDesc('created_at')
-            ->paginate(15);
+            ->paginate($perPage);
 
         return response()->json($tasks);
     }
