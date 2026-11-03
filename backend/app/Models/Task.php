@@ -4,26 +4,27 @@ namespace App\Models;
 
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable([
-    'project_id',
-    'title',
-    'description',
-    'status',
-    'priority',
-    'due_date',
-    'assigned_to',
-])]
 class Task extends Model
 {
     /** @use HasFactory<\Database\Factories\TaskFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'project_id',
+        'title',
+        'description',
+        'status',
+        'priority',
+        'due_date',
+        'assigned_to',
+        'created_by',
+    ];
 
     /**
      * Get the attributes that should be cast.
