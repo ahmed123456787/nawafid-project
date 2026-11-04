@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
@@ -27,24 +28,32 @@ class TaskController extends Controller
     {
         $this->authorize('view', $project);
 
-        $perPage = min((int) $request->integer('per_page', 15) ?: 15, 100);
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::enum(TaskStatus::class)],
+            'priority' => ['nullable', Rule::enum(TaskPriority::class)],
+            'assigned_to' => ['nullable', 'integer'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $perPage = $filters['per_page'] ?? 15;
 
         $tasks = $project->tasks()
             ->when(
-                $request->filled('status'),
-                fn ($q) => $q->where('status', TaskStatus::from($request->string('status')))
+                ! empty($filters['status']),
+                fn ($q) => $q->where('status', $filters['status'])
             )
             ->when(
-                $request->filled('priority'),
-                fn ($q) => $q->where('priority', TaskPriority::from($request->string('priority')))
+                ! empty($filters['priority']),
+                fn ($q) => $q->where('priority', $filters['priority'])
             )
             ->when(
-                $request->filled('assigned_to'),
-                fn ($q) => $q->where('assigned_to', $request->integer('assigned_to'))
+                ! empty($filters['assigned_to']),
+                fn ($q) => $q->where('assigned_to', $filters['assigned_to'])
             )
             ->when(
-                $request->filled('q'),
-                fn ($q) => $q->where('title', 'like', '%'.$request->string('q').'%')
+                ! empty($filters['q']),
+                fn ($q) => $q->where('title', 'like', '%'.$filters['q'].'%')
             )
             ->with(['assignee', 'creator'])
             ->orderByDesc('created_at')

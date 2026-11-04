@@ -1,0 +1,240 @@
+### Nawafid API — example requests
+#
+# Works in VS Code (REST Client extension), JetBrains IDEs, and Zed out of the box.
+# Flow:
+#   1. Run "Register" or "Login" first — copy the token from the response.
+#   2. Replace the @token value below with it.
+#   3. Fire the remaining requests.
+#
+# Before running any auth-required request, make sure the API is up:
+#     docker compose up -d
+#     docker compose exec app php artisan migrate --seed
+
+@baseUrl = http://localhost:8000/api
+@token = PASTE_TOKEN_HERE
+@projectId = 1
+@taskId = 1
+@userId = 2
+
+
+# ============================================================
+# AUTH
+# ============================================================
+
+### Register a new user (returns a token)
+POST {{baseUrl}}/register
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Alice",
+  "email": "alice@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+
+### Login (demo seeded user)
+POST {{baseUrl}}/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password"
+}
+
+
+### Current user
+GET {{baseUrl}}/me
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Logout (revokes the current token)
+POST {{baseUrl}}/logout
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# USERS (member picker)
+# ============================================================
+
+### List users (paginated, default 15)
+GET {{baseUrl}}/users
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Search users by name or email
+GET {{baseUrl}}/users?q=alice
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# PROJECTS
+# ============================================================
+
+### List my projects (paginated)
+GET {{baseUrl}}/projects
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Search projects by name/description
+GET {{baseUrl}}/projects?q=alpha&per_page=20
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Create a project (I become the owner)
+POST {{baseUrl}}/projects
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Website redesign",
+  "description": "Rework marketing site for Q1 launch"
+}
+
+
+### Show one project (with members)
+GET {{baseUrl}}/projects/{{projectId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Update a project (owner only)
+PUT {{baseUrl}}/projects/{{projectId}}
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Website redesign — v2",
+  "description": "Updated scope"
+}
+
+
+### Delete a project (owner only, cascades tasks + memberships)
+DELETE {{baseUrl}}/projects/{{projectId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# MEMBERS (owner only)
+# ============================================================
+
+### Add a member to a project
+POST {{baseUrl}}/projects/{{projectId}}/members
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "user_id": {{userId}},
+  "role": "member"
+}
+
+
+### Change a member's role (owner | member)
+PATCH {{baseUrl}}/projects/{{projectId}}/members/{{userId}}
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "role": "owner"
+}
+
+
+### Remove a member from a project
+# Returns 422 if removing the last owner.
+DELETE {{baseUrl}}/projects/{{projectId}}/members/{{userId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# TASKS
+# ============================================================
+
+### List tasks in a project (paginated)
+GET {{baseUrl}}/projects/{{projectId}}/tasks
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Filter + search tasks
+# status: todo | in_progress | done
+# priority: low | medium | high
+# assigned_to: user id
+# q: substring of title
+GET {{baseUrl}}/projects/{{projectId}}/tasks?status=in_progress&priority=high&q=bug&per_page=25
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Create a task
+POST {{baseUrl}}/projects/{{projectId}}/tasks
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Fix login redirect",
+  "description": "Users bounce back to /login after refresh.",
+  "status": "todo",
+  "priority": "high",
+  "due_date": "2026-11-15",
+  "assigned_to": {{userId}}
+}
+
+
+### Show one task
+GET {{baseUrl}}/tasks/{{taskId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Update a task (partial allowed via PATCH)
+PATCH {{baseUrl}}/tasks/{{taskId}}
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "done"
+}
+
+
+### Delete a task
+DELETE {{baseUrl}}/tasks/{{taskId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+# ============================================================
+# ERROR SHAPE REFERENCE
+# ============================================================
+#
+# 401 Unauthenticated
+#   { "message": "Unauthenticated." }
+#
+# 403 Forbidden (policy denied)
+#   { "message": "This action is unauthorized." }
+#
+# 404 Not Found
+#   { "message": "Resource not found." }
+#
+# 422 Validation Failed
+#   {
+#     "message": "The given data was invalid.",
+#     "errors": {
+#       "email": ["The email field is required."]
+#     }
+#   }

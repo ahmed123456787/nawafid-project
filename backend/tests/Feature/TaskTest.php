@@ -78,6 +78,22 @@ class TaskTest extends TestCase
             ->assertJsonPath('data.0.priority', 'high');
     }
 
+    public function test_task_list_returns_422_for_invalid_filter_values(): void
+    {
+        $user = User::factory()->create();
+        $project = $this->projectWith($user);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/projects/{$project->id}/tasks?status=unknown")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/projects/{$project->id}/tasks?priority=critical")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['priority']);
+    }
+
     public function test_task_list_can_be_searched_by_title(): void
     {
         $user = User::factory()->create();

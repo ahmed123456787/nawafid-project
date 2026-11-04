@@ -77,7 +77,7 @@ Built as a full-stack take-home assignment with an emphasis on clean backend arc
 
 ### 1. Clone and copy env files
 ```bash
-git clone <repo-url> team-managment-nawafid
+git clone https://github.com/ahmed123456787/nawafid-project
 cd team-managment-nawafid
 
 cp .env.example .env                       # Docker Compose variables
@@ -175,6 +175,8 @@ The seeder (`database/seeders/DatabaseSeeder.php`) also creates 5 random users, 
 ## API reference
 
 All endpoints are prefixed with `/api` and (except for register/login) require a Bearer token in the `Authorization` header.
+
+Ready-to-run example requests live in [`docs/api-requests.http`](docs/api-requests.http) — open the file in VS Code (with the REST Client extension), JetBrains, or Zed, replace the `@token` value with a token from the login response, and fire any request directly from the editor. Every endpoint below has a working example in that file.
 
 ### Authentication
 | Method | Endpoint     | Purpose                     | Auth |
