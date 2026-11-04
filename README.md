@@ -65,7 +65,7 @@ Built as a full-stack take-home assignment with an emphasis on clean backend arc
 | Routing    | React Router 6                             |
 | HTTP       | Axios (with token interceptor)             |
 | Container  | Docker Compose (app + db + frontend)       |
-| Testing    | PHPUnit (37 feature tests)                 |
+| Testing    | PHPUnit (38 feature tests)                 |
 
 ---
 
@@ -233,7 +233,7 @@ All JSON renderers live in `bootstrap/app.php` — consistent shape for every er
 
 ## Running the tests
 
-The backend ships with **37 feature tests** covering authentication, project CRUD, task CRUD, member management, and every authorization scenario required by the brief. Tests run against an in-memory SQLite database (configured in `phpunit.xml`) so they're fast and never touch your dev data.
+The backend ships with **38 feature tests** covering authentication, project CRUD, task CRUD, member management, and every authorization scenario required by the brief. Tests run against an in-memory SQLite database (configured in `phpunit.xml`) so they're fast and never touch your dev data.
 
 ```bash
 # Run everything
@@ -255,7 +255,7 @@ What's covered:
 | --------------------------------------------- | ----- | --------------------------------------------------------- |
 | `tests/Feature/AuthTest.php`                  | 8     | Register, login, logout, `/me`, 401 handling              |
 | `tests/Feature/ProjectTest.php`               | 9     | Project CRUD + owner/member policy enforcement + search   |
-| `tests/Feature/TaskTest.php`                  | 12    | Task CRUD + filters + search + member/non-member access   |
+| `tests/Feature/TaskTest.php`                  | 13    | Task CRUD + filters + search + member/non-member access + invalid-filter validation |
 | `tests/Feature/ProjectMemberTest.php`         | 7     | Add/remove/role-change + last-owner protection            |
 
 ---
@@ -278,7 +278,7 @@ team-managment-nawafid/
 │   │   ├── migrations/                     Schema
 │   │   └── seeders/                        Demo data
 │   ├── routes/api.php                      REST routes
-│   └── tests/Feature/                      37 feature tests
+│   └── tests/Feature/                      38 feature tests
 ├── frontend/                               React SPA
 │   └── src/
 │       ├── api/                            Axios wrappers (one file per resource)
@@ -336,6 +336,6 @@ Search inputs debounce (300 ms) before firing API calls, and the projects page s
 ### What could be added
 - Task activity log (audit trail)
 - Real-time task updates (Reverb / Pusher broadcast)
-- Composite indexes on `tasks(project_id, status)` for larger datasets
+- Sorting controls on list views
 - GitHub Actions CI pipeline
-- Rate limiting on `/register` and `/login`
+- Request cancellation (AbortController) on fast-changing search inputs
