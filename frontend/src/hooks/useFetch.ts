@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { apiMessage } from '../lib/apiError'
 
 interface UseFetchResult<T> {
   data: T | null
@@ -32,8 +33,8 @@ export function useFetch<T>(
     try {
       const res = await fetcherRef.current()
       setData(res)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Request failed.')
+    } catch (err) {
+      setError(apiMessage(err))
     } finally {
       setLoading(false)
     }

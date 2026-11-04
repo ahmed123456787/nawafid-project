@@ -14,6 +14,11 @@ class DatabaseSeeder extends Seeder
 
     /**
      * Seed the application's database.
+     *
+     * Creates a known demo account (test@example.com / password) that is the
+     * owner of every seeded project, so anyone cloning the repo can log in
+     * and exercise owner-only features (edit, delete, manage members)
+     * straight away.
      */
     public function run(): void
     {
@@ -23,22 +28,13 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $otherUsers = User::factory()->count(5)->create();
-        $allUsers = $otherUsers->push($testUser);
 
-        Project::factory()->count(3)->create()->each(function (Project $project) use ($allUsers, $testUser) {
-            $owner = $allUsers->random();
+        Project::factory()->count(3)->create()->each(function (Project $project) use ($otherUsers, $testUser) {
+            // Demo user is the owner of every seeded project.
+            $project->members()->attach($testUser->id, ['role' => 'owner']);
 
-            $project->members()->attach($owner->id, ['role' => 'owner']);
-
-            if (! $project->members()->where('user_id', $testUser->id)->exists()) {
-                $project->members()->attach($testUser->id, ['role' => 'member']);
-            }
-
-            $members = $allUsers
-                ->except([$owner->id, $testUser->id])
-                ->random(2);
-
-            foreach ($members as $member) {
+            // Attach 3 other users as regular members.
+            foreach ($otherUsers->random(3) as $member) {
                 $project->members()->attach($member->id, ['role' => 'member']);
             }
 
@@ -47,20 +43,23 @@ class DatabaseSeeder extends Seeder
             Task::factory()->count(8)->create([
                 'project_id' => $project->id,
                 'assigned_to' => fn () => $projectMemberIds->random(),
-                'created_by' => $owner->id,
+                'created_by' => $testUser->id,
             ]);
 
             Task::factory()->overdue()->count(2)->create([
                 'project_id' => $project->id,
                 'assigned_to' => fn () => $projectMemberIds->random(),
-                'created_by' => $owner->id,
+                'created_by' => $testUser->id,
             ]);
 
             Task::factory()->done()->count(3)->create([
                 'project_id' => $project->id,
                 'assigned_to' => fn () => $projectMemberIds->random(),
-                'created_by' => $owner->id,
+                'created_by' => $testUser->id,
             ]);
         });
+
+        $this->command->info('');
+        $this->command->info('Demo account: test@example.com / password  (owner of all seeded projects)');
     }
 }

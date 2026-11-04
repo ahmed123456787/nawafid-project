@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { useAuth } from '../context/AuthContext'
+import { apiErrors, apiMessage } from '../lib/apiError'
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -27,9 +28,9 @@ export default function RegisterPage() {
         password_confirmation: passwordConfirmation,
       })
       navigate('/projects', { replace: true })
-    } catch (err: any) {
-      setErrors(err?.response?.data?.errors ?? {})
-      setMessage(err?.response?.data?.message ?? 'Unable to register.')
+    } catch (err) {
+      setErrors(apiErrors(err))
+      setMessage(apiMessage(err, 'Unable to register.'))
     } finally {
       setSubmitting(false)
     }

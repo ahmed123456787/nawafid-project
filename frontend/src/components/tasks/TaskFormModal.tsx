@@ -5,6 +5,7 @@ import Modal from '../ui/Modal'
 import Select from '../ui/Select'
 import Textarea from '../ui/Textarea'
 import { tasksApi } from '../../api/tasks'
+import { apiErrors, apiMessage } from '../../lib/apiError'
 import { PRIORITY_LABEL, STATUS_LABEL } from '../../lib/taskMeta'
 import type {
   ProjectMember,
@@ -97,9 +98,9 @@ export default function TaskFormModal({
       }
       onSaved()
       onClose()
-    } catch (err: any) {
-      setErrors(err?.response?.data?.errors ?? {})
-      setMessage(err?.response?.data?.message ?? 'Unable to save task.')
+    } catch (err) {
+      setErrors(apiErrors(err))
+      setMessage(apiMessage(err, 'Unable to save task.'))
     } finally {
       setSubmitting(false)
     }

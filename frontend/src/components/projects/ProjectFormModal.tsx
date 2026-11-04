@@ -4,6 +4,7 @@ import Input from '../ui/Input'
 import Modal from '../ui/Modal'
 import Textarea from '../ui/Textarea'
 import { projectsApi } from '../../api/projects'
+import { apiErrors, apiMessage } from '../../lib/apiError'
 import type { Project } from '../../types'
 
 interface ProjectFormModalProps {
@@ -47,9 +48,9 @@ export default function ProjectFormModal({
       }
       onSaved()
       onClose()
-    } catch (err: any) {
-      setErrors(err?.response?.data?.errors ?? {})
-      setMessage(err?.response?.data?.message ?? 'Unable to save project.')
+    } catch (err) {
+      setErrors(apiErrors(err))
+      setMessage(apiMessage(err, 'Unable to save project.'))
     } finally {
       setSubmitting(false)
     }

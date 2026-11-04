@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import ConfirmDialog from '../common/ConfirmDialog'
 import Pagination from '../common/Pagination'
 import Button from '../ui/Button'
@@ -12,6 +12,7 @@ import TasksTable from './TasksTable'
 import { tasksApi } from '../../api/tasks'
 import { useDebounce } from '../../hooks/useDebounce'
 import { useFetch } from '../../hooks/useFetch'
+import { apiMessage } from '../../lib/apiError'
 import { PRIORITY_LABEL, STATUS_LABEL } from '../../lib/taskMeta'
 import type {
   Paginated,
@@ -33,9 +34,12 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
   const [priority, setPriority] = useState<TaskPriority | ''>('')
   const [page, setPage] = useState(1)
 
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, status, priority])
+  // Changing any filter resets to page 1. Doing it inline (rather than in an
+  // effect) means filter + page updates happen in the same React batch,
+  // which avoids a double fetch and the response race that came with it.
+  const changeSearch = (v: string) => { setSearch(v); setPage(1) }
+  const changeStatus = (v: TaskStatus | '') => { setStatus(v); setPage(1) }
+  const changePriority = (v: TaskPriority | '') => { setPriority(v); setPage(1) }
 
   const { data, loading, error, refetch } = useFetch<Paginated<Task>>(
     () =>
@@ -72,8 +76,8 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
       await tasksApi.remove(deleteTarget.id)
       setDeleteTarget(null)
       refetch()
-    } catch (err: any) {
-      setMutationError(err?.response?.data?.message ?? 'Failed to delete task.')
+    } catch (err) {
+      setMutationError(apiMessage(err, 'Failed to delete task.'))
     } finally {
       setDeleting(false)
     }
@@ -94,11 +98,11 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
         <Input
           placeholder="Search by title..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => changeSearch(e.target.value)}
         />
         <Select
           value={status}
-          onChange={(e) => setStatus(e.target.value as TaskStatus | '')}
+          onChange={(e) => changeStatus(e.target.value as TaskStatus | '')}
           className="sm:w-40"
         >
           <option value="">All statuses</option>
@@ -110,7 +114,7 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
         </Select>
         <Select
           value={priority}
-          onChange={(e) => setPriority(e.target.value as TaskPriority | '')}
+          onChange={(e) => changePriority(e.target.value as TaskPriority | '')}
           className="sm:w-40"
         >
           <option value="">All priorities</option>

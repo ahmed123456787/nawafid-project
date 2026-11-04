@@ -6,6 +6,7 @@ import Button from '../ui/Button'
 import EmptyState from '../ui/EmptyState'
 import { membersApi } from '../../api/members'
 import { useAuth } from '../../context/AuthContext'
+import { apiMessage } from '../../lib/apiError'
 import type { Project, ProjectMember, Role } from '../../types'
 
 interface MembersSectionProps {
@@ -32,8 +33,8 @@ export default function MembersSection({
     try {
       await membersApi.updateRole(project.id, member.id, { role: nextRole })
       onChanged()
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Unable to change role.')
+    } catch (err) {
+      setError(apiMessage(err, 'Unable to change role.'))
     }
   }
 
@@ -45,8 +46,8 @@ export default function MembersSection({
       await membersApi.remove(project.id, removeTarget.id)
       onChanged()
       setRemoveTarget(null)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Unable to remove member.')
+    } catch (err) {
+      setError(apiMessage(err, 'Unable to remove member.'))
     } finally {
       setRemoving(false)
     }

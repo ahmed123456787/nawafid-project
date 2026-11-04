@@ -7,6 +7,7 @@ import Spinner from '../ui/Spinner'
 import { membersApi } from '../../api/members'
 import { usersApi } from '../../api/users'
 import { useDebounce } from '../../hooks/useDebounce'
+import { apiMessage } from '../../lib/apiError'
 import type { ProjectMember, Role, User } from '../../types'
 
 interface AddMemberModalProps {
@@ -66,8 +67,8 @@ export default function AddMemberModal({
       await membersApi.add(projectId, { user_id: selectedId, role })
       onAdded()
       onClose()
-    } catch (err: any) {
-      setMessage(err?.response?.data?.message ?? 'Unable to add member.')
+    } catch (err) {
+      setMessage(apiMessage(err, 'Unable to add member.'))
     } finally {
       setSubmitting(false)
     }

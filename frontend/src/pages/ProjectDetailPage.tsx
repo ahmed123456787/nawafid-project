@@ -10,6 +10,7 @@ import Spinner from '../components/ui/Spinner'
 import { projectsApi } from '../api/projects'
 import { useAuth } from '../context/AuthContext'
 import { useFetch } from '../hooks/useFetch'
+import { apiMessage } from '../lib/apiError'
 import type { Project, Role } from '../types'
 
 export default function ProjectDetailPage() {
@@ -38,8 +39,8 @@ export default function ProjectDetailPage() {
     try {
       await projectsApi.remove(projectId)
       navigate('/projects', { replace: true })
-    } catch (err: any) {
-      setDeleteError(err?.response?.data?.message ?? 'Failed to delete project.')
+    } catch (err) {
+      setDeleteError(apiMessage(err, 'Failed to delete project.'))
       setDeleteOpen(false)
     } finally {
       setDeleting(false)
