@@ -78,7 +78,7 @@ Built as a full-stack take-home assignment with an emphasis on clean backend arc
 ### 1. Clone and copy env files
 ```bash
 git clone https://github.com/ahmed123456787/nawafid-project
-cd team-managment-nawafid
+cd nawafid-project
 
 cp .env.example .env                       # Docker Compose variables
 cp backend/.env.example backend/.env       # Laravel config
