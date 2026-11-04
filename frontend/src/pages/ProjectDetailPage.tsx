@@ -1,79 +1,66 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import ConfirmDialog from "../components/common/ConfirmDialog";
-import MembersSection from "../components/members/MembersSection";
-import ProjectFormModal from "../components/projects/ProjectFormModal";
-import ProjectHeader from "../components/projects/ProjectHeader";
-import TasksSection from "../components/tasks/TasksSection";
-import ErrorState from "../components/ui/ErrorState";
-import Spinner from "../components/ui/Spinner";
-import { projectsApi } from "../api/projects";
-import { useAuth } from "../context/AuthContext";
-import type { Project, Role } from "../types";
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import ConfirmDialog from '../components/common/ConfirmDialog'
+import MembersSection from '../components/members/MembersSection'
+import ProjectFormModal from '../components/projects/ProjectFormModal'
+import ProjectHeader from '../components/projects/ProjectHeader'
+import TasksSection from '../components/tasks/TasksSection'
+import ErrorState from '../components/ui/ErrorState'
+import Spinner from '../components/ui/Spinner'
+import { projectsApi } from '../api/projects'
+import { useAuth } from '../context/AuthContext'
+import { useFetch } from '../hooks/useFetch'
+import type { Project, Role } from '../types'
 
 export default function ProjectDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const projectId = Number(id);
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { id } = useParams<{ id: string }>()
+  const projectId = Number(id)
+  const navigate = useNavigate()
+  const { user } = useAuth()
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: project,
+    loading,
+    error,
+    refetch,
+  } = useFetch<Project>(() => projectsApi.get(projectId), [projectId])
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  const fetchProject = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await projectsApi.get(projectId);
-      setProject(res);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to load project.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProject();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const role: Role | null =
-    project?.members?.find((m) => m.id === user?.id)?.pivot.role ?? null;
+    project?.members?.find((m) => m.id === user?.id)?.pivot.role ?? null
 
   const handleDelete = async () => {
-    setDeleting(true);
+    setDeleting(true)
     try {
-      await projectsApi.remove(projectId);
-      navigate("/projects", { replace: true });
+      await projectsApi.remove(projectId)
+      navigate('/projects', { replace: true })
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to delete project.");
-      setDeleteOpen(false);
+      setDeleteError(err?.response?.data?.message ?? 'Failed to delete project.')
+      setDeleteOpen(false)
     } finally {
-      setDeleting(false);
+      setDeleting(false)
     }
-  };
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-slate-400">
         <Spinner size="lg" />
       </div>
-    );
+    )
   }
 
   if (error || !project) {
     return (
       <ErrorState
-        message={error ?? "Project not found."}
-        onRetry={fetchProject}
+        message={error ?? deleteError ?? 'Project not found.'}
+        onRetry={refetch}
       />
-    );
+    )
   }
 
   return (
@@ -85,18 +72,24 @@ export default function ProjectDetailPage() {
         onDelete={() => setDeleteOpen(true)}
       />
 
+      {deleteError && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {deleteError}
+        </p>
+      )}
+
       <TasksSection project={project} canManage={!!role} />
 
       <MembersSection
         project={project}
         canManage={role === 'owner'}
-        onChanged={fetchProject}
+        onChanged={refetch}
       />
 
       <ProjectFormModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        onSaved={fetchProject}
+        onSaved={refetch}
         project={project}
       />
 
@@ -111,5 +104,5 @@ export default function ProjectDetailPage() {
         onClose={() => setDeleteOpen(false)}
       />
     </div>
-  );
+  )
 }

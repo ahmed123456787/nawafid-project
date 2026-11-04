@@ -11,6 +11,7 @@ import TaskFormModal from './TaskFormModal'
 import TasksTable from './TasksTable'
 import { tasksApi } from '../../api/tasks'
 import { useDebounce } from '../../hooks/useDebounce'
+import { useFetch } from '../../hooks/useFetch'
 import { PRIORITY_LABEL, STATUS_LABEL } from '../../lib/taskMeta'
 import type {
   Paginated,
@@ -32,41 +33,26 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
   const [priority, setPriority] = useState<TaskPriority | ''>('')
   const [page, setPage] = useState(1)
 
-  const [data, setData] = useState<Paginated<Task> | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, status, priority])
+
+  const { data, loading, error, refetch } = useFetch<Paginated<Task>>(
+    () =>
+      tasksApi.list(project.id, {
+        q: debouncedSearch || undefined,
+        status: status || undefined,
+        priority: priority || undefined,
+        page,
+      }),
+    [project.id, debouncedSearch, status, priority, page],
+  )
 
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Task | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null)
   const [deleting, setDeleting] = useState(false)
-
-  const fetchTasks = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await tasksApi.list(project.id, {
-        q: debouncedSearch || undefined,
-        status: status || undefined,
-        priority: priority || undefined,
-        page,
-      })
-      setData(res)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to load tasks.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, status, priority])
-
-  useEffect(() => {
-    fetchTasks()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.id, debouncedSearch, status, priority, page])
+  const [mutationError, setMutationError] = useState<string | null>(null)
 
   const openCreate = () => {
     setEditTarget(null)
@@ -81,12 +67,13 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleting(true)
+    setMutationError(null)
     try {
       await tasksApi.remove(deleteTarget.id)
       setDeleteTarget(null)
-      fetchTasks()
+      refetch()
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to delete task.')
+      setMutationError(err?.response?.data?.message ?? 'Failed to delete task.')
     } finally {
       setDeleting(false)
     }
@@ -135,13 +122,19 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
         </Select>
       </div>
 
+      {mutationError && (
+        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {mutationError}
+        </p>
+      )}
+
       <div className="mt-4">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-slate-400">
             <Spinner size="lg" />
           </div>
         ) : error ? (
-          <ErrorState message={error} onRetry={fetchTasks} />
+          <ErrorState message={error} onRetry={refetch} />
         ) : !data || data.data.length === 0 ? (
           <EmptyState
             title={
@@ -183,15 +176,13 @@ export default function TasksSection({ project, canManage }: TasksSectionProps) 
         members={members}
         task={editTarget}
         onClose={() => setFormOpen(false)}
-        onSaved={fetchTasks}
+        onSaved={refetch}
       />
 
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete task?"
-        message={
-          deleteTarget ? `Delete "${deleteTarget.title}"?` : undefined
-        }
+        message={deleteTarget ? `Delete "${deleteTarget.title}"?` : undefined}
         confirmLabel="Delete"
         danger
         loading={deleting}

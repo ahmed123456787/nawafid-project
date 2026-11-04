@@ -10,6 +10,7 @@ import ProjectCard from '../components/projects/ProjectCard'
 import ProjectFormModal from '../components/projects/ProjectFormModal'
 import { projectsApi } from '../api/projects'
 import { useDebounce } from '../hooks/useDebounce'
+import { useFetch } from '../hooks/useFetch'
 import type { Paginated, Project } from '../types'
 
 export default function ProjectsPage() {
@@ -18,10 +19,6 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const debouncedSearch = useDebounce(search, 300)
   const page = Number(searchParams.get('page') ?? '1') || 1
-
-  const [data, setData] = useState<Paginated<Project> | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -34,26 +31,10 @@ export default function ProjectsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch])
 
-  const fetchProjects = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await projectsApi.list({
-        q: debouncedSearch || undefined,
-        page,
-      })
-      setData(res)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to load projects.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchProjects()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, page])
+  const { data, loading, error, refetch } = useFetch<Paginated<Project>>(
+    () => projectsApi.list({ q: debouncedSearch || undefined, page }),
+    [debouncedSearch, page],
+  )
 
   const goToPage = (next: number) => {
     const sp = new URLSearchParams(searchParams)
@@ -79,7 +60,7 @@ export default function ProjectsPage() {
           <Spinner size="lg" />
         </div>
       ) : error ? (
-        <ErrorState message={error} onRetry={fetchProjects} />
+        <ErrorState message={error} onRetry={refetch} />
       ) : !data || data.data.length === 0 ? (
         <EmptyState
           title={debouncedSearch ? 'No matching projects' : 'No projects yet'}
@@ -112,7 +93,7 @@ export default function ProjectsPage() {
       <ProjectFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSaved={fetchProjects}
+        onSaved={refetch}
       />
     </div>
   )

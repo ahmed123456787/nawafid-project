@@ -22,6 +22,37 @@ interface TaskFormModalProps {
   onSaved: () => void
 }
 
+// Field names mirror the API payload so the submit handler stays trivial.
+interface TaskFormState {
+  title: string
+  description: string
+  status: TaskStatus
+  priority: TaskPriority
+  due_date: string
+  assigned_to: string
+}
+
+const EMPTY_FORM: TaskFormState = {
+  title: '',
+  description: '',
+  status: 'todo',
+  priority: 'medium',
+  due_date: '',
+  assigned_to: '',
+}
+
+function formFromTask(task: Task | null | undefined): TaskFormState {
+  if (!task) return EMPTY_FORM
+  return {
+    title: task.title,
+    description: task.description ?? '',
+    status: task.status,
+    priority: task.priority,
+    due_date: task.due_date ?? '',
+    assigned_to: task.assigned_to ? String(task.assigned_to) : '',
+  }
+}
+
 export default function TaskFormModal({
   open,
   projectId,
@@ -31,39 +62,33 @@ export default function TaskFormModal({
   onSaved,
 }: TaskFormModalProps) {
   const isEdit = !!task
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [status, setStatus] = useState<TaskStatus>('todo')
-  const [priority, setPriority] = useState<TaskPriority>('medium')
-  const [dueDate, setDueDate] = useState('')
-  const [assignedTo, setAssignedTo] = useState<string>('')
+
+  const [form, setForm] = useState<TaskFormState>(EMPTY_FORM)
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [message, setMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!open) return
-    setTitle(task?.title ?? '')
-    setDescription(task?.description ?? '')
-    setStatus(task?.status ?? 'todo')
-    setPriority(task?.priority ?? 'medium')
-    setDueDate(task?.due_date ?? '')
-    setAssignedTo(task?.assigned_to ? String(task.assigned_to) : '')
+    setForm(formFromTask(task))
     setErrors({})
     setMessage(null)
   }, [open, task])
+
+  const update = <K extends keyof TaskFormState>(key: K, value: TaskFormState[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }))
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     try {
       const payload = {
-        title,
-        description: description || null,
-        status,
-        priority,
-        due_date: dueDate || null,
-        assigned_to: assignedTo ? Number(assignedTo) : null,
+        title: form.title,
+        description: form.description || null,
+        status: form.status,
+        priority: form.priority,
+        due_date: form.due_date || null,
+        assigned_to: form.assigned_to ? Number(form.assigned_to) : null,
       }
       if (isEdit && task) {
         await tasksApi.update(task.id, payload)
@@ -107,8 +132,8 @@ export default function TaskFormModal({
         <Input
           label="Title"
           required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={form.title}
+          onChange={(e) => update('title', e.target.value)}
           error={errors.title?.[0]}
           autoFocus
         />
@@ -116,16 +141,16 @@ export default function TaskFormModal({
         <Textarea
           label="Description"
           rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={form.description}
+          onChange={(e) => update('description', e.target.value)}
           error={errors.description?.[0]}
         />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
             label="Status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as TaskStatus)}
+            value={form.status}
+            onChange={(e) => update('status', e.target.value as TaskStatus)}
             error={errors.status?.[0]}
           >
             {(Object.keys(STATUS_LABEL) as TaskStatus[]).map((s) => (
@@ -137,8 +162,8 @@ export default function TaskFormModal({
 
           <Select
             label="Priority"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            value={form.priority}
+            onChange={(e) => update('priority', e.target.value as TaskPriority)}
             error={errors.priority?.[0]}
           >
             {(Object.keys(PRIORITY_LABEL) as TaskPriority[]).map((p) => (
@@ -151,15 +176,15 @@ export default function TaskFormModal({
           <Input
             label="Due date"
             type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            value={form.due_date}
+            onChange={(e) => update('due_date', e.target.value)}
             error={errors.due_date?.[0]}
           />
 
           <Select
             label="Assignee"
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
+            value={form.assigned_to}
+            onChange={(e) => update('assigned_to', e.target.value)}
             error={errors.assigned_to?.[0]}
           >
             <option value="">Unassigned</option>
