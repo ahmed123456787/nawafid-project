@@ -55,6 +55,7 @@ Built as a full-stack take-home assignment with an emphasis on clean backend arc
 
 ## Tech stack
 
+
 | Layer      | Choice                                     |
 | ---------- | ------------------------------------------ |
 | Backend    | Laravel 11 (PHP 8.3)                       |
@@ -84,6 +85,7 @@ cp .env.example .env                       # Docker Compose variables
 cp backend/.env.example backend/.env       # Laravel config
 cp frontend/.env.example frontend/.env     # Vite config (optional)
 ```
+
 
 ### 2. Bring up the stack
 ```bash
@@ -210,6 +212,7 @@ Ready-to-run example requests live in [`docs/api-requests.http`](docs/api-reques
 | DELETE | `/projects/{id}/members/{userId}`             | Remove member             | manageMembers            |
 
 > The last owner of a project cannot be removed or demoted — returns `422`.
+
 
 ### Tasks
 | Method | Endpoint                             | Purpose                                                                               | Policy          |
