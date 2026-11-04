@@ -16,9 +16,9 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      *
      * Creates a known demo account (test@example.com / password) that is the
-     * owner of every seeded project, so anyone cloning the repo can log in
-     * and exercise owner-only features (edit, delete, manage members)
-     * straight away.
+     * owner of one seeded project and a plain member of the others, so both
+     * perspectives (owner-only vs. member-only features) can be exercised
+     * right after a fresh clone.
      */
     public function run(): void
     {
@@ -29,37 +29,53 @@ class DatabaseSeeder extends Seeder
 
         $otherUsers = User::factory()->count(5)->create();
 
-        Project::factory()->count(3)->create()->each(function (Project $project) use ($otherUsers, $testUser) {
-            // Demo user is the owner of every seeded project.
-            $project->members()->attach($testUser->id, ['role' => 'owner']);
+        Project::factory()
+            ->count(3)
+            ->create()
+            ->each(function (Project $project, int $index) use ($otherUsers, $testUser) {
+                // Pick a dedicated owner for the project.
+                // The first project is owned by the demo user so they land on
+                // owner-only features immediately; the rest are owned by other
+                // users so the demo account also sees the member perspective.
+                $owner = $index === 0 ? $testUser : $otherUsers->random();
 
-            // Attach 3 other users as regular members.
-            foreach ($otherUsers->random(3) as $member) {
-                $project->members()->attach($member->id, ['role' => 'member']);
-            }
+                $project->members()->attach($owner->id, ['role' => 'owner']);
 
-            $projectMemberIds = $project->members()->pluck('users.id');
+                // Make sure the demo user is in every project so they can see
+                // the full seeded dataset.
+                if ($owner->id !== $testUser->id) {
+                    $project->members()->attach($testUser->id, ['role' => 'member']);
+                }
 
-            Task::factory()->count(8)->create([
-                'project_id' => $project->id,
-                'assigned_to' => fn () => $projectMemberIds->random(),
-                'created_by' => $testUser->id,
-            ]);
+                // Add two more random members for realism.
+                foreach ($otherUsers->except([$owner->id])->random(2) as $member) {
+                    $project->members()->attach($member->id, ['role' => 'member']);
+                }
 
-            Task::factory()->overdue()->count(2)->create([
-                'project_id' => $project->id,
-                'assigned_to' => fn () => $projectMemberIds->random(),
-                'created_by' => $testUser->id,
-            ]);
+                $projectMemberIds = $project->members()->pluck('users.id');
 
-            Task::factory()->done()->count(3)->create([
-                'project_id' => $project->id,
-                'assigned_to' => fn () => $projectMemberIds->random(),
-                'created_by' => $testUser->id,
-            ]);
-        });
+                Task::factory()->count(8)->create([
+                    'project_id' => $project->id,
+                    'assigned_to' => fn () => $projectMemberIds->random(),
+                    'created_by' => $owner->id,
+                ]);
+
+                Task::factory()->overdue()->count(2)->create([
+                    'project_id' => $project->id,
+                    'assigned_to' => fn () => $projectMemberIds->random(),
+                    'created_by' => $owner->id,
+                ]);
+
+                Task::factory()->done()->count(3)->create([
+                    'project_id' => $project->id,
+                    'assigned_to' => fn () => $projectMemberIds->random(),
+                    'created_by' => $owner->id,
+                ]);
+            });
 
         $this->command->info('');
-        $this->command->info('Demo account: test@example.com / password  (owner of all seeded projects)');
+        $this->command->info('Demo account: test@example.com / password');
+        $this->command->info('  — owner of the first seeded project');
+        $this->command->info('  — member of the other two');
     }
 }

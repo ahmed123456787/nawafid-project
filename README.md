@@ -166,9 +166,9 @@ Four tables:
 
 After `migrate --seed`, log in with:
 
-| Email              | Password   | Membership                                   |
-| ------------------ | ---------- | -------------------------------------------- |
-| `test@example.com` | `password` | Member of all 3 seeded projects              |
+| Email              | Password   | Membership                                                              |
+| ------------------ | ---------- | ----------------------------------------------------------------------- |
+| `test@example.com` | `password` | **Owner** of the first seeded project, **member** of the other two      |
 
 The seeder (`database/seeders/DatabaseSeeder.php`) also creates 5 random users, 3 projects (each with an owner and a couple of members), and 13 tasks per project in mixed states (regular, overdue, done). All factory-created users share the password `password`.
 
