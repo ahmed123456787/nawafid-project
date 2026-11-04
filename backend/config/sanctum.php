@@ -50,7 +50,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Tokens expire after 30 days by default. Override with SANCTUM_EXPIRATION
+    // (in minutes). Set to null in the env to disable expiration entirely.
+    'expiration' => env('SANCTUM_EXPIRATION', 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------

@@ -135,6 +135,8 @@ Standard Laravel `.env`. Key fields:
 | `DB_HOST`        | `db`            | Docker service name, **not** `127.0.0.1` |
 | `DB_PORT`        | `3306`          | Container-internal port                  |
 | `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | matches root `.env` |             |
+| `SANCTUM_EXPIRATION` | `1440`          | Token lifetime in minutes (24 hours). Set empty for no expiration |
+| `FRONTEND_URL`   | `http://localhost:5173` | Comma-separated list of origins allowed by CORS |
 
 ### `frontend/.env`
 Optional — the frontend falls back to `http://localhost:8000/api` if unset.
